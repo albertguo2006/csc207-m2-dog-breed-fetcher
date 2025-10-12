@@ -1,5 +1,6 @@
 package dogapi;
 
+import dogapi.BreedFetcher.BreedNotFoundException;
 import java.util.List;
 
 /**
@@ -16,10 +17,21 @@ public class BreedFetcherForLocalTesting implements BreedFetcher {
         if ("hound".equalsIgnoreCase(breed)) {
             return List.of("afghan", "basset");
         }
-        throw new BreedNotFoundException(breed);
+        return sneakyThrow(new BreedNotFoundException(breed));
     }
 
     public int getCallCount() {
         return callCount;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T sneakyThrow(Throwable t) {
+        BreedFetcherForLocalTesting.<RuntimeException>throwUnchecked(t);
+        return null; // Unreachable
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwUnchecked(Throwable t) throws E {
+        throw (E) t;
     }
 }

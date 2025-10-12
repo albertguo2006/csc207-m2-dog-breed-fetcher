@@ -1,5 +1,6 @@
 package dogapi;
 
+import dogapi.BreedFetcher.BreedNotFoundException;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -21,15 +22,51 @@ public class DogApiBreedFetcher implements BreedFetcher {
      * Fetch the list of sub breeds for the given breed from the dog.ceo API.
      * @param breed the breed to fetch sub breeds for
      * @return list of sub breeds for the given breed
-     * @throws BreedNotFoundException if the breed does not exist (or if the API call fails for any reason)
      */
     @Override
     public List<String> getSubBreeds(String breed) {
-        // TODO Task 1: Complete this method based on its provided documentation
-        //      and the documentation for the dog.ceo API. You may find it helpful
-        //      to refer to the examples of using OkHttpClient from the last lab,
-        //      as well as the code for parsing JSON responses.
-        // return statement included so that the starter code can compile and run.
-        return new ArrayList<>();
+        if (breed == null || breed.trim().isEmpty()) {
+            return sneakyThrow(new BreedNotFoundException(breed));
+        }
+
+        String normalized = breed.trim().toLowerCase(Locale.ROOT);
+        String url = "https://dog.ceo/api/breed/" + normalized + "/list";
+
+        Request request = new Request.Builder()
+                .url(url)
+                .get()
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            String body = response.body() != null ? response.body().string() : "";
+
+            JSONObject json = new JSONObject(body);
+            String status = json.optString("status", "");
+            if (!"success".equalsIgnoreCase(status)) {
+                return sneakyThrow(new BreedNotFoundException(breed));
+            }
+
+            JSONArray arr = json.optJSONArray("message");
+            List<String> result = new ArrayList<>();
+            if (arr != null) {
+                for (int i = 0; i < arr.length(); i++) {
+                    result.add(arr.getString(i));
+                }
+            }
+            return result;
+        } catch (IOException | org.json.JSONException e) {
+            return sneakyThrow(new BreedNotFoundException(breed));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> T sneakyThrow(Throwable t) {
+        DogApiBreedFetcher.<RuntimeException>throwUnchecked(t);
+        return null; // Unreachable
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <E extends Throwable> void throwUnchecked(Throwable t) throws E {
+        throw (E) t;
     }
 }

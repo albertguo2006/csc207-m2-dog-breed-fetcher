@@ -28,7 +28,7 @@ public class Main {
             List<String> subBreeds = breedFetcher.getSubBreeds(breed);
             return (subBreeds == null) ? 0 : subBreeds.size();
         } catch (Exception e) {
-            return -1;
+            return 0;
         }
     }
 }
